@@ -1,11 +1,11 @@
-import React, { useState, useEffect } from "react";
-import { useNavigate, useParams } from "react-router-dom";
+import React, { useState } from "react";
+import { useNavigate } from "react-router-dom";
+import api from "../../api/axios"; // <-- Import de ton instance Axios configurée
 
-function UpdateUser() {
-  const { id } = useParams();
+function PostUser() {
   const navigate = useNavigate();
 
-  const API_URL = "http://localhost:3001";
+  // L'URL est déjà gérée dans api/axios.js, plus besoin de la définir ici
 
   const [formData, setFormData] = useState({
     firstName: "",
@@ -21,6 +21,8 @@ function UpdateUser() {
     moyenne: ""
   });
 
+  const [errorMsg, setErrorMsg] = useState(""); // Pour afficher les erreurs à l'utilisateur
+
   const handleInputChange = (event) => {
     const { name, value } = event.target;
     setFormData({
@@ -29,57 +31,30 @@ function UpdateUser() {
     });
   };
 
-  const fetchStudent = async () => {
-    try {
-      const response = await fetch(`${API_URL}/students/${id}`);
-      if (!response.ok) throw new Error("API indisponible");
-      const data = await response.json();
-      setFormData(data);
-    } catch (error) {
-      console.error("Erreur API, utilisation de localStorage :", error);
-
-      // Fallback localStorage
-      const studentsTest = JSON.parse(localStorage.getItem("studentsTest") || "[]");
-      const student = studentsTest.find((s) => s.id.toString() === id.toString());
-
-      if (student) setFormData(student);
-    }
-  };
-
-  useEffect(() => {
-    fetchStudent();
-  }, [id]);
-
   const handleSubmit = async (e) => {
     e.preventDefault();
-    console.log("FormData:", formData);
+    setErrorMsg("");
 
     try {
-      const response = await fetch(`${API_URL}/students/${id}`, {
-        method: "PUT",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify(formData),
-      });
+      // --- CHANGEMENT ICI ---
+      // On utilise api.post. Le token est envoyé auto via l'intercepteur.
+      // Les données (formData) sont auto-converties en JSON.
+      await api.post("/students", formData);
 
-      if (!response.ok) throw new Error("Erreur update API");
-
-      const data = await response.json();
-      console.log("Étudiant mis à jour via API :", data);
+      console.log("Étudiant créé avec succès !");
       navigate("/dashboard");
+
     } catch (error) {
-      console.error("Erreur API :", error.message);
-
-      // Fallback update localStorage
-      let studentsTest = JSON.parse(localStorage.getItem("studentsTest") || "[]");
-
-      studentsTest = studentsTest.map((s) =>
-        s.id.toString() === id.toString() ? { ...s, ...formData } : s
-      );
-
-      localStorage.setItem("studentsTest", JSON.stringify(studentsTest));
-
-      console.log("Étudiant mis à jour en localStorage :", formData);
-      navigate("/dashboard");
+      console.error("Erreur lors de la création :", error);
+      
+      // Gestion d'erreur utilisateur
+      if (error.response) {
+        // Le serveur a répondu avec une erreur (ex: 400 Bad Request, email déjà utilisé...)
+        setErrorMsg(error.response.data.message || "Erreur lors de l'enregistrement.");
+      } else {
+        // Le serveur est éteint ou injoignable
+        setErrorMsg("Impossible de joindre le serveur. Vérifiez votre connexion.");
+      }
     }
   };
 
@@ -87,7 +62,7 @@ function UpdateUser() {
     <div className="min-vh-100 py-5 px-3 bg-gradient-modern">
       <style>{`
         .bg-gradient-modern {
-          background: linear-gradient(135deg, #3b82f6 0%, #8b5cf6 100%);
+          background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
           position: relative;
           overflow: hidden;
         }
@@ -130,7 +105,7 @@ function UpdateUser() {
         }
         
         .form-header {
-          background: linear-gradient(135deg, #3b82f6 0%, #8b5cf6 100%);
+          background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
           color: white;
           padding: 2rem;
           border-radius: 20px 20px 0 0;
@@ -163,13 +138,13 @@ function UpdateUser() {
           padding: 1.5rem;
           border-radius: 12px;
           margin-bottom: 1.5rem;
-          border-left: 4px solid #3b82f6;
+          border-left: 4px solid #667eea;
         }
         
         .form-section-title {
           font-size: 1.1rem;
           font-weight: 600;
-          color: #3b82f6;
+          color: #667eea;
           margin-bottom: 1rem;
           display: flex;
           align-items: center;
@@ -195,13 +170,13 @@ function UpdateUser() {
         }
         
         .form-control:focus, .form-select:focus {
-          border-color: #3b82f6;
-          box-shadow: 0 0 0 4px rgba(59, 130, 246, 0.1);
+          border-color: #667eea;
+          box-shadow: 0 0 0 4px rgba(102, 126, 234, 0.1);
           outline: none;
         }
         
         .form-control:hover, .form-select:hover {
-          border-color: #93c5fd;
+          border-color: #a5b4fc;
         }
         
         .input-icon {
@@ -210,7 +185,7 @@ function UpdateUser() {
         }
         
         .btn-submit {
-          background: linear-gradient(135deg, #3b82f6 0%, #2563eb 100%);
+          background: linear-gradient(135deg, #10b981 0%, #059669 100%);
           color: white;
           border: none;
           border-radius: 12px;
@@ -218,15 +193,15 @@ function UpdateUser() {
           font-weight: 600;
           font-size: 1.1rem;
           transition: all 0.3s ease;
-          box-shadow: 0 4px 15px rgba(59, 130, 246, 0.3);
+          box-shadow: 0 4px 15px rgba(16, 185, 129, 0.3);
           width: 100%;
           margin-top: 1rem;
         }
         
         .btn-submit:hover {
-          background: linear-gradient(135deg, #2563eb 0%, #1d4ed8 100%);
+          background: linear-gradient(135deg, #059669 0%, #047857 100%);
           transform: translateY(-2px);
-          box-shadow: 0 6px 20px rgba(59, 130, 246, 0.4);
+          box-shadow: 0 6px 20px rgba(16, 185, 129, 0.4);
         }
         
         .btn-submit:active {
@@ -235,8 +210,8 @@ function UpdateUser() {
         
         .btn-back {
           background: white;
-          color: #3b82f6;
-          border: 2px solid #3b82f6;
+          color: #667eea;
+          border: 2px solid #667eea;
           border-radius: 12px;
           padding: 0.75rem 1.5rem;
           font-weight: 600;
@@ -245,7 +220,7 @@ function UpdateUser() {
         }
         
         .btn-back:hover {
-          background: #3b82f6;
+          background: #667eea;
           color: white;
           transform: translateX(-5px);
         }
@@ -284,16 +259,16 @@ function UpdateUser() {
           grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
           gap: 1rem;
         }
-        
-        .student-id-badge {
-          display: inline-block;
-          background: linear-gradient(135deg, #fbbf24 0%, #f59e0b 100%);
-          color: white;
-          padding: 0.5rem 1rem;
-          border-radius: 20px;
-          font-weight: 600;
-          font-size: 0.9rem;
-          margin-top: 0.5rem;
+
+        .alert-error {
+          background-color: #fee2e2;
+          border: 1px solid #ef4444;
+          color: #b91c1c;
+          padding: 1rem;
+          border-radius: 8px;
+          margin-bottom: 1.5rem;
+          text-align: center;
+          font-weight: 500;
         }
       `}</style>
 
@@ -311,15 +286,23 @@ function UpdateUser() {
           {/* En-tête */}
           <div className="form-header">
             <h1>
-              <i className="bi bi-pencil-square"></i>
-              Modifier un Étudiant
+              <i className="bi bi-person-plus-fill"></i>
+              Ajouter un Étudiant
             </h1>
-            <p>Mettez à jour les informations de l'étudiant</p>
-            {id && <span className="student-id-badge">ID: {id}</span>}
+            <p>Remplissez les informations ci-dessous pour inscrire un nouvel étudiant</p>
           </div>
 
           {/* Corps du formulaire */}
           <div className="form-body">
+            
+            {/* Affichage des erreurs si nécessaire */}
+            {errorMsg && (
+              <div className="alert-error">
+                <i className="bi bi-exclamation-triangle-fill me-2"></i>
+                {errorMsg}
+              </div>
+            )}
+
             <form onSubmit={handleSubmit}>
               
               {/* Section Informations Personnelles */}
@@ -553,7 +536,7 @@ function UpdateUser() {
               {/* Bouton de soumission */}
               <button type="submit" className="btn-submit">
                 <i className="bi bi-check-circle me-2"></i>
-                Mettre à jour l'étudiant
+                Enregistrer l'étudiant
               </button>
             </form>
           </div>
@@ -563,4 +546,4 @@ function UpdateUser() {
   );
 }
 
-export default UpdateUser;
+export default PostUser;

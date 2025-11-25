@@ -1,11 +1,12 @@
 import React, { useState } from "react";
 import { useNavigate } from "react-router-dom";
-import "./Login.css"; // <= ajoute ce fichier CSS
+import useAuth from "../../hooks/useAuth"; // Ton hook existant (attention à la typo dans le nom du fichier)
+import api from "../../api/axios"; // Le fichier qu'on vient de créer
+import "./Login.css";
 
 function Login() {
-
   const navigate = useNavigate();
-  const API_URL = "http://localhost:3001";
+  const { login } = useAuth(); // On récupère la fonction login du contexte
 
   const [formData, setFormData] = useState({
     email: "",
@@ -24,33 +25,34 @@ function Login() {
     setErrorMsg("");
 
     try {
-      const res = await fetch(`${API_URL}/users`);
-      const users = await res.json();
+      // --- CHANGEMENT MAJEUR ICI ---
+      // On envoie les identifiants au backend Node.js
+      const response = await api.post("/auth/login", formData);
+      
+      // Le backend doit renvoyer un objet type: { token: "...", user: { ... } }
+      const { token, user } = response.data;
 
-      const foundUser = users.find(
-        (u) =>
-          u.email === formData.email &&
-          u.password === formData.password
-      );
+      // On passe le token et les infos utilisateur au contexte
+      login(token, user);
 
-      if (!foundUser) {
-        setErrorMsg("Email ou mot de passe incorrect");
-        return;
-      }
-
-      localStorage.setItem("token", "fake-jwt-token");
       navigate("/dashboard");
 
     } catch (error) {
-      console.error(error);
-      setErrorMsg("Erreur du serveur JSON Server");
+      console.error("Login error:", error);
+      
+      // Gestion des erreurs renvoyées par le backend (ex: 400, 401, 500)
+      if (error.response && error.response.data) {
+        // Affiche le message précis envoyé par le backend (ex: "Mot de passe incorrect")
+        setErrorMsg(error.response.data.message || "Erreur d'authentification");
+      } else {
+        setErrorMsg("Le serveur ne répond pas. Vérifiez que Node.js est lancé.");
+      }
     }
   };
 
   return (
     <div className="login-container">
       <div className="login-card">
-
         <h2 className="login-title">Connexion</h2>
 
         {errorMsg && (
@@ -86,7 +88,6 @@ function Login() {
             Se connecter
           </button>
         </form>
-
       </div>
     </div>
   );

@@ -1,10 +1,10 @@
-import React, { useState } from "react";
-import { useNavigate } from "react-router-dom";
+import React, { useState, useEffect } from "react";
+import { useNavigate, useParams } from "react-router-dom";
+import api from "../../api/axios";// <-- Import de ton instance Axios
 
-function PostUser() {
+function UpdateUser() {
+  const { id } = useParams(); // Récupère l'ID depuis l'URL (ex: /student/64b3f.../edit)
   const navigate = useNavigate();
-
-  const API_URL = "http://localhost:3001"; 
 
   const [formData, setFormData] = useState({
     firstName: "",
@@ -20,6 +20,8 @@ function PostUser() {
     moyenne: ""
   });
 
+  const [errorMsg, setErrorMsg] = useState("");
+
   const handleInputChange = (event) => {
     const { name, value } = event.target;
     setFormData({
@@ -28,37 +30,55 @@ function PostUser() {
     });
   };
 
+  // 1. Récupérer les données de l'étudiant au chargement de la page
+  const fetchStudent = async () => {
+    try {
+      // Axios ajoute le token automatiquement
+      const response = await api.get(`/students/${id}`);
+      
+      // MongoDB renvoie parfois des champs inutiles (__v, _id), 
+      // on s'assure de ne mettre dans le state que ce qui nous intéresse si besoin,
+      // ou on prend tout l'objet data directement.
+      setFormData(response.data);
+
+    } catch (error) {
+      console.error("Erreur lors de la récupération :", error);
+      setErrorMsg("Impossible de charger les données de l'étudiant.");
+      
+      // Si l'étudiant n'existe pas (404), on redirige vers le dashboard après 2sec
+      if (error.response && error.response.status === 404) {
+        setTimeout(() => navigate("/dashboard"), 2000);
+      }
+    }
+  };
+
+  useEffect(() => {
+    if (id) {
+      fetchStudent();
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [id]);
+
+  // 2. Envoyer les modifications au serveur
   const handleSubmit = async (e) => {
     e.preventDefault();
-    console.log("FormData:", formData);
+    setErrorMsg("");
 
     try {
-      const response = await fetch(`${API_URL}/students`, {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-        },
-        body: JSON.stringify(formData),
-      });
+      // Requete PUT vers Node.js
+      await api.put(`/students/${id}`, formData);
 
-      if (!response.ok) {
-        throw new Error("API indisponible");
-      }
-
-      const data = await response.json();
-      console.log("Étudiant créé via API :", data);
+      console.log("Étudiant mis à jour avec succès");
       navigate("/dashboard");
 
     } catch (error) {
-      console.error("API erreur, sauvegarde locale :", error.message);
-
-      const localStudents = JSON.parse(localStorage.getItem("studentsTest") || "[]");
-      const newStudent = { ...formData, id: Date.now() };
-      localStudents.push(newStudent);
-      localStorage.setItem("studentsTest", JSON.stringify(localStudents));
-
-      console.log("Étudiant ajouté localement :", newStudent);
-      navigate("/dashboard");
+      console.error("Erreur lors de la mise à jour :", error);
+      
+      if (error.response) {
+        setErrorMsg(error.response.data.message || "Erreur lors de la mise à jour.");
+      } else {
+        setErrorMsg("Serveur injoignable.");
+      }
     }
   };
 
@@ -66,7 +86,7 @@ function PostUser() {
     <div className="min-vh-100 py-5 px-3 bg-gradient-modern">
       <style>{`
         .bg-gradient-modern {
-          background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+          background: linear-gradient(135deg, #3b82f6 0%, #8b5cf6 100%);
           position: relative;
           overflow: hidden;
         }
@@ -109,7 +129,7 @@ function PostUser() {
         }
         
         .form-header {
-          background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+          background: linear-gradient(135deg, #3b82f6 0%, #8b5cf6 100%);
           color: white;
           padding: 2rem;
           border-radius: 20px 20px 0 0;
@@ -142,13 +162,13 @@ function PostUser() {
           padding: 1.5rem;
           border-radius: 12px;
           margin-bottom: 1.5rem;
-          border-left: 4px solid #667eea;
+          border-left: 4px solid #3b82f6;
         }
         
         .form-section-title {
           font-size: 1.1rem;
           font-weight: 600;
-          color: #667eea;
+          color: #3b82f6;
           margin-bottom: 1rem;
           display: flex;
           align-items: center;
@@ -174,13 +194,13 @@ function PostUser() {
         }
         
         .form-control:focus, .form-select:focus {
-          border-color: #667eea;
-          box-shadow: 0 0 0 4px rgba(102, 126, 234, 0.1);
+          border-color: #3b82f6;
+          box-shadow: 0 0 0 4px rgba(59, 130, 246, 0.1);
           outline: none;
         }
         
         .form-control:hover, .form-select:hover {
-          border-color: #a5b4fc;
+          border-color: #93c5fd;
         }
         
         .input-icon {
@@ -189,7 +209,7 @@ function PostUser() {
         }
         
         .btn-submit {
-          background: linear-gradient(135deg, #10b981 0%, #059669 100%);
+          background: linear-gradient(135deg, #3b82f6 0%, #2563eb 100%);
           color: white;
           border: none;
           border-radius: 12px;
@@ -197,15 +217,15 @@ function PostUser() {
           font-weight: 600;
           font-size: 1.1rem;
           transition: all 0.3s ease;
-          box-shadow: 0 4px 15px rgba(16, 185, 129, 0.3);
+          box-shadow: 0 4px 15px rgba(59, 130, 246, 0.3);
           width: 100%;
           margin-top: 1rem;
         }
         
         .btn-submit:hover {
-          background: linear-gradient(135deg, #059669 0%, #047857 100%);
+          background: linear-gradient(135deg, #2563eb 0%, #1d4ed8 100%);
           transform: translateY(-2px);
-          box-shadow: 0 6px 20px rgba(16, 185, 129, 0.4);
+          box-shadow: 0 6px 20px rgba(59, 130, 246, 0.4);
         }
         
         .btn-submit:active {
@@ -214,8 +234,8 @@ function PostUser() {
         
         .btn-back {
           background: white;
-          color: #667eea;
-          border: 2px solid #667eea;
+          color: #3b82f6;
+          border: 2px solid #3b82f6;
           border-radius: 12px;
           padding: 0.75rem 1.5rem;
           font-weight: 600;
@@ -224,7 +244,7 @@ function PostUser() {
         }
         
         .btn-back:hover {
-          background: #667eea;
+          background: #3b82f6;
           color: white;
           transform: translateX(-5px);
         }
@@ -263,6 +283,28 @@ function PostUser() {
           grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
           gap: 1rem;
         }
+        
+        .student-id-badge {
+          display: inline-block;
+          background: linear-gradient(135deg, #fbbf24 0%, #f59e0b 100%);
+          color: white;
+          padding: 0.5rem 1rem;
+          border-radius: 20px;
+          font-weight: 600;
+          font-size: 0.9rem;
+          margin-top: 0.5rem;
+        }
+
+        .alert-error {
+          background-color: #fee2e2;
+          border: 1px solid #ef4444;
+          color: #b91c1c;
+          padding: 1rem;
+          border-radius: 8px;
+          margin-bottom: 1.5rem;
+          text-align: center;
+          font-weight: 500;
+        }
       `}</style>
 
       <div className="container" style={{ maxWidth: "900px" }}>
@@ -279,14 +321,25 @@ function PostUser() {
           {/* En-tête */}
           <div className="form-header">
             <h1>
-              <i className="bi bi-person-plus-fill"></i>
-              Ajouter un Étudiant
+              <i className="bi bi-pencil-square"></i>
+              Modifier un Étudiant
             </h1>
-            <p>Remplissez les informations ci-dessous pour inscrire un nouvel étudiant</p>
+            <p>Mettez à jour les informations de l'étudiant</p>
+            {/* Affichage de l'ID seulement si dispo */}
+            {id && <span className="student-id-badge">ID: {id}</span>}
           </div>
 
           {/* Corps du formulaire */}
           <div className="form-body">
+
+            {/* Affichage Erreur */}
+            {errorMsg && (
+              <div className="alert-error">
+                <i className="bi bi-exclamation-triangle-fill me-2"></i>
+                {errorMsg}
+              </div>
+            )}
+
             <form onSubmit={handleSubmit}>
               
               {/* Section Informations Personnelles */}
@@ -308,7 +361,7 @@ function PostUser() {
                       type="text"
                       className="form-control"
                       onChange={handleInputChange}
-                      value={formData.firstName}
+                      value={formData.firstName || ''}
                       placeholder="Ex: Ahmed"
                       required
                     />
@@ -325,7 +378,7 @@ function PostUser() {
                       type="text"
                       className="form-control"
                       onChange={handleInputChange}
-                      value={formData.lastName}
+                      value={formData.lastName || ''}
                       placeholder="Ex: Alami"
                       required
                     />
@@ -344,7 +397,7 @@ function PostUser() {
                       type="date"
                       className="form-control"
                       onChange={handleInputChange}
-                      value={formData.dateNaissance}
+                      value={formData.dateNaissance || ''}
                       required
                     />
                   </div>
@@ -359,7 +412,7 @@ function PostUser() {
                       name="gender"
                       className="form-select"
                       onChange={handleInputChange}
-                      value={formData.gender}
+                      value={formData.gender || ''}
                       required
                     >
                       <option value="">Sélectionner...</option>
@@ -390,7 +443,7 @@ function PostUser() {
                       type="email"
                       className="form-control"
                       onChange={handleInputChange}
-                      value={formData.email}
+                      value={formData.email || ''}
                       placeholder="exemple@email.com"
                       required
                     />
@@ -407,7 +460,7 @@ function PostUser() {
                       type="tel"
                       className="form-control"
                       onChange={handleInputChange}
-                      value={formData.phone}
+                      value={formData.phone || ''}
                       placeholder="+212 6XX XXX XXX"
                       required
                     />
@@ -434,7 +487,7 @@ function PostUser() {
                       type="text"
                       className="form-control"
                       onChange={handleInputChange}
-                      value={formData.studentNumber}
+                      value={formData.studentNumber || ''}
                       placeholder="Ex: 2024001"
                       required
                     />
@@ -451,7 +504,7 @@ function PostUser() {
                       type="text"
                       className="form-control"
                       onChange={handleInputChange}
-                      value={formData.filiere}
+                      value={formData.filiere || ''}
                       placeholder="Ex: Informatique"
                       required
                     />
@@ -470,7 +523,7 @@ function PostUser() {
                       type="text"
                       className="form-control"
                       onChange={handleInputChange}
-                      value={formData.level}
+                      value={formData.level || ''}
                       placeholder="Ex: L1, L2, M1..."
                       required
                     />
@@ -487,7 +540,7 @@ function PostUser() {
                       type="number"
                       className="form-control"
                       onChange={handleInputChange}
-                      value={formData.annee}
+                      value={formData.annee || ''}
                       placeholder="Ex: 2024"
                       required
                       min="2020"
@@ -508,7 +561,7 @@ function PostUser() {
                     step="0.01"
                     className="form-control"
                     onChange={handleInputChange}
-                    value={formData.moyenne}
+                    value={formData.moyenne || ''}
                     placeholder="Ex: 15.50"
                     required
                     min="0"
@@ -520,7 +573,7 @@ function PostUser() {
               {/* Bouton de soumission */}
               <button type="submit" className="btn-submit">
                 <i className="bi bi-check-circle me-2"></i>
-                Enregistrer l'étudiant
+                Mettre à jour l'étudiant
               </button>
             </form>
           </div>
@@ -530,4 +583,4 @@ function PostUser() {
   );
 }
 
-export default PostUser;
+export default UpdateUser;
