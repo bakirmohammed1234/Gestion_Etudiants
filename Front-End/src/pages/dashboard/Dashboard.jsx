@@ -25,16 +25,16 @@ function Dashboard() {
   }, []);
 
   const handlePostStudent = () => {
-    navigate("/user");
+    navigate("/student");
   };
 
   const handleUpdateStudent = (id) => {
-    navigate(`/user/${id}/edit`);
+    navigate(`/student/${id}/edit`);
   };
 
   const handleDeleteStudent = async (id) => {
     try {
-      const response = await fetch(`${API_URL}/users/${id}`, { method: "DELETE" });
+      const response = await fetch(`${API_URL}/students/${id}`, { method: "DELETE" });
       if (!response.ok) throw new Error("Erreur suppression API");
 
       setStudents(students.filter((s) => s.id !== id));

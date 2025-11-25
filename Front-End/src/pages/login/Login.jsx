@@ -1,82 +1,95 @@
-import { signInWithEmailAndPassword } from "firebase/auth";
 import React, { useState } from "react";
 import { useNavigate } from "react-router-dom";
-import { Link } from 'react-router-dom';
-import { auth } from "../../utils/FireBase";
+import "./Login.css"; // <= ajoute ce fichier CSS
 
-function Login(){
+function Login() {
 
-    const navigate = useNavigate();
+  const navigate = useNavigate();
+  const API_URL = "http://localhost:3001";
 
-    const [formData,setFormData] = useState({
-        email:'',
-        password: ''
-    });
+  const [formData, setFormData] = useState({
+    email: "",
+    password: ""
+  });
 
-    const handleInputChange=(event)=>{
-             const {name,value} =event.target;
+  const [errorMsg, setErrorMsg] = useState("");
 
-             setFormData({
-                    ...formData,
-                    [name]:value
-                });
+  const handleInputChange = (event) => {
+    const { name, value } = event.target;
+    setFormData({ ...formData, [name]: value });
+  };
+
+  const handleSubmit = async (e) => {
+    e.preventDefault();
+    setErrorMsg("");
+
+    try {
+      const res = await fetch(`${API_URL}/users`);
+      const users = await res.json();
+
+      const foundUser = users.find(
+        (u) =>
+          u.email === formData.email &&
+          u.password === formData.password
+      );
+
+      if (!foundUser) {
+        setErrorMsg("Email ou mot de passe incorrect");
+        return;
+      }
+
+      localStorage.setItem("token", "fake-jwt-token");
+      navigate("/dashboard");
+
+    } catch (error) {
+      console.error(error);
+      setErrorMsg("Erreur du serveur JSON Server");
     }
+  };
 
-    const handleSubmit = async(e)=>{
-       e.preventDefault();
-                   console.log(formData);
-                   try{
-                       const response = await signInWithEmailAndPassword(auth,formData.email,formData.password);
-                       console.log("login successfully", response);
-                       navigate("/dashboard");
-       
-                   }catch(error){
-                       console.log(error.message);
-                   }
+  return (
+    <div className="login-container">
+      <div className="login-card">
 
-    }
-     const handleSignUpClick = ()=>{
-        navigate("/register");
+        <h2 className="login-title">Connexion</h2>
 
-    }
+        {errorMsg && (
+          <div className="error-box">
+            {errorMsg}
+          </div>
+        )}
 
-return (
-
-   
-
-    <div className="d-flex justify-content-center align-items-center vh-100 bg-light">
-      <div className="card p-4 shadow" style={{ width: '500px' }}>
-        <h1>se connecter</h1>
-        <form>
-          <div className="mb-3">
-            <label htmlFor="exampleInputEmail1" className="form-label">Email address</label>
-            <input name="email"type="email" className="form-control" id="exampleInputEmail1" aria-describedby="emailHelp" onChange={handleInputChange}  value={formData.email}/>
-            <div id="emailHelp" className="form-text">
-              We'll never share your email with anyone else.
-            </div>
+        <form onSubmit={handleSubmit}>
+          <div className="input-group">
+            <label>Email</label>
+            <input
+              name="email"
+              type="email"
+              value={formData.email}
+              onChange={handleInputChange}
+              required
+            />
           </div>
 
-          <div className="mb-3">
-            <label htmlFor="exampleInputPassword1" className="form-label" >Password</label>
-            <input name="password" type="password" className="form-control" id="exampleInputPassword1" onChange={handleInputChange}  value={formData.password}/>
+          <div className="input-group">
+            <label>Mot de passe</label>
+            <input
+              name="password"
+              type="password"
+              value={formData.password}
+              onChange={handleInputChange}
+              required
+            />
           </div>
 
-          <div className="mb-3 form-check">
-            <input type="checkbox" className="form-check-input" id="exampleCheck1" />
-            <label className="form-check-label" htmlFor="exampleCheck1">Check me out</label>
-          </div>
-
-          <button type="submit" className="btn btn-primary w-100" onClick={handleSubmit}>SignIn</button>
-         <div onClick={handleSignUpClick} >
-        <p><Link >{"Don't have an account? signUp"}</Link></p> {/* ← ici Link est utilisé */}
-       </div>
-          
+          <button className="login-btn" type="submit">
+            Se connecter
+          </button>
         </form>
+
       </div>
     </div>
   );
 }
 
-
-
-export default  Login;
+export default Login;

@@ -1,19 +1,18 @@
-import { StrictMode } from 'react'
-import { createRoot } from 'react-dom/client'
-import './index.css'
-import App from './App.jsx'
-import 'bootstrap/dist/css/bootstrap.min.css'
-import 'bootstrap/dist/js/bootstrap.bundle.min.js' 
-import  {BrowserRouter} from 'react-router-dom'
-import { AuthProvider } from './hooks/useAuth.jsx'
+import { StrictMode } from 'react';
+import { createRoot } from 'react-dom/client';
+import './index.css';
+import App from './App.jsx';
+import 'bootstrap/dist/css/bootstrap.min.css';
+import 'bootstrap/dist/js/bootstrap.bundle.min.js';
+import { BrowserRouter } from 'react-router-dom';
+import { AuthProvider } from './hooks/AuthContext.jsx';
+
 createRoot(document.getElementById('root')).render(
   <StrictMode>
     <BrowserRouter>
-    <AuthProvider>
-       <App/>
-    </AuthProvider>
-     
+      <AuthProvider>
+        <App />
+      </AuthProvider>
     </BrowserRouter>
-    
   </StrictMode>,
-)
+);
